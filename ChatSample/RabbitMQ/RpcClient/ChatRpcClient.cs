@@ -1,7 +1,10 @@
 ﻿using ChatSample.Infrastructures.Interfaces.RabbitMQ;
+using Microsoft.VisualBasic;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Collections.Concurrent;
 using System.Text;
+using System.Threading.Channels;
 
 namespace ChatSample.RabbitMQ.RpcClient
 {
@@ -12,7 +15,7 @@ namespace ChatSample.RabbitMQ.RpcClient
         private IConnectionFactory _connectionFactory;
         private IConfiguration _configuration;
 
-        private AsyncEventingBasicConsumer _consumer;
+        private readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _pendingRequests = new();
         private TaskCompletionSource<string> _tcs = new();
 
         private string _corrId;
@@ -31,20 +34,22 @@ namespace ChatSample.RabbitMQ.RpcClient
             };
         }
 
-        public async Task InitAsync()
+        public async Task InitAsync(string responseQueueName)
         {
             _connection = await _connectionFactory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
-            var reply = await _channel.QueueDeclareAsync(
-                queue: "",
+            var replyQueue = await _channel.QueueDeclareAsync(
+                queue: responseQueueName,
                 durable: false,
                 exclusive: true,
                 autoDelete: true
             );
 
-            _responseQueue = reply.QueueName;
-            _consumer = new AsyncEventingBasicConsumer(_channel);
+            _responseQueue = replyQueue.QueueName;
+            var _consumer = new AsyncEventingBasicConsumer(_channel);
+
+
             _consumer.ReceivedAsync += OnResponse;
 
             await _channel.BasicConsumeAsync(
@@ -59,34 +64,54 @@ namespace ChatSample.RabbitMQ.RpcClient
             _connection = await _connectionFactory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
-            await _channel.QueueDeclareAsync(queue:requestQueueName,durable:true,exclusive:false, autoDelete:false);
-            await _channel.ExchangeDeclareAsync(exchange: $"{requestQueueName}-Exchange", type: ExchangeType.Direct);
-            await _channel.QueueBindAsync(queue: requestQueueName, exchange: $"{requestQueueName}-Exchange", routingKey: requestQueueName);
+            string result = "";
 
-            _corrId = Guid.NewGuid().ToString();
-            _tcs = new TaskCompletionSource<string>();
+            await _channel.QueueDeclareAsync(queue: requestQueueName, durable: true, exclusive: false, autoDelete: false);
 
-            var msgProperties = new BasicProperties()
+            var corrId = Guid.NewGuid().ToString();
+            var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+
+            var props = new BasicProperties
             {
-                CorrelationId = _corrId,
-                ReplyTo = _responseQueue
+                CorrelationId = corrId,
+                ReplyTo = responseQueueName
             };
 
             var body = Encoding.UTF8.GetBytes(message);
 
             await _channel.BasicPublishAsync(
-                exchange: $"{requestQueueName}-Exchange",
+                exchange: "",
                 routingKey: requestQueueName,
                 mandatory: true,
-                basicProperties: msgProperties,
+                basicProperties: props,
                 body: body
             );
-
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
-            await using (cts.Token.Register(() => _tcs.TrySetCanceled()))
+            var _consumer = new AsyncEventingBasicConsumer(_channel);
+            _consumer.ReceivedAsync += async (sender, ea) =>
             {
-                return await _tcs.Task;
-            }
+                var body = ea.Body.ToArray();
+                var json = Encoding.UTF8.GetString(body);
+                tcs.SetResult(json);
+
+            };
+            
+
+            await _channel.BasicConsumeAsync(
+                queue: responseQueueName,
+                autoAck: true,
+                consumer: _consumer
+            );
+
+            using var cts = new CancellationTokenSource(timeout);
+            cts.Token.Register(() =>
+            {
+                if (_pendingRequests.TryRemove(corrId, out var timedOutTcs))
+                    timedOutTcs.TrySetCanceled();
+            });
+
+            
+            return await tcs.Task;
         }
 
         public Task OnResponse(object response, BasicDeliverEventArgs ea)
@@ -98,7 +123,7 @@ namespace ChatSample.RabbitMQ.RpcClient
                 _tcs.TrySetResult(result);
             }
 
-            return Task.CompletedTask;
+            return _tcs.Task;
         }
     }
 }

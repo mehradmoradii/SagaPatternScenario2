@@ -15,12 +15,12 @@ namespace ChatSample.CRUD.Command.Handlers
         private readonly IBaseRepository<Chat, Guid> _chatRepository;
 
 
-        public SendMessageCommandHandler(IRpcClient client, IBaseRepository<Message, Guid> messageRepository,IBaseRepository<Chat, Guid> chatRepository)
+        public SendMessageCommandHandler(IRpcClient client, IBaseRepository<Message, Guid> messageRepository, IBaseRepository<Chat, Guid> chatRepository)
         {
             _client = client;
             _messageRepository = messageRepository;
             _chatRepository = chatRepository;
-            
+
         }
 
 
@@ -29,59 +29,57 @@ namespace ChatSample.CRUD.Command.Handlers
         {
             var check = _client.CallWithResponse(request.recieverID, "Check-Authentication", "Result-Chack-Authentication", 60000);
 
-            if(check.Result == "true")
+            if (check.Result.ToString() == "true")
             {
                 var senderid = Guid.Parse(request.senderID);
-                var recieverid= Guid.Parse(request.recieverID);
+                var recieverid = Guid.Parse(request.recieverID);
 
-                var chatExistance1 = _chatRepository.FindByCondition(o=> o.Owner2 == senderid && o.Owner1 == recieverid).FirstOrDefault();
+                var chatExistance1 = _chatRepository.FindByCondition(o => o.Owner2 == senderid && o.Owner1 == recieverid).FirstOrDefault();
                 var chatExistance2 = _chatRepository.FindByCondition(o => o.Owner1 == senderid && o.Owner2 == recieverid).FirstOrDefault();
 
 
 
                 Chat chatToUse;
 
-                if (chatExistance1 != null && chatExistance2 != null)
+
+
+                if (chatExistance1 != null)
                 {
-                    
-
-                    if (chatExistance1 != null)
-                    {
-                        chatToUse = chatExistance1;
-                    }
-                    else if (chatExistance2 != null)
-                    {
-                        chatToUse = chatExistance2;
-                    }
-                    else
-                    {
-                        chatToUse = new Chat
-                        {
-                            Owner1 = senderid,
-                            Owner2 = recieverid,
-                        };
-                        await _chatRepository.Create(chatToUse);
-                        await _chatRepository.Save();
-                    }
-                    var newmsg = new Message
-                    {
-                        Text = request.Text,
-                        Belongto = chatToUse
-
-                    };
-
-                    await _messageRepository.Create(newmsg);
-                    await _messageRepository.Save();
-
-                    Task.CompletedTask.Wait();
-
+                    chatToUse = chatExistance1;
                 }
+                else if (chatExistance2 != null)
+                {
+                    chatToUse = chatExistance2;
+                }
+                else
+                {
+                    chatToUse = new Chat
+                    {
+                        Owner1 = senderid,
+                        Owner2 = recieverid,
+                    };
+                    await _chatRepository.Create(chatToUse);
+                    await _chatRepository.Save();
+                }
+                var newmsg = new Message
+                {
+                    Text = request.Text,
+                    Belongto = chatToUse
 
-                
+                };
 
-               
+                await _messageRepository.Create(newmsg);
+                await _messageRepository.Save();
+
+                Task.CompletedTask.Wait();
 
             }
+
+
+
+
+
         }
     }
 }
+

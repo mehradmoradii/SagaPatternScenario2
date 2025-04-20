@@ -37,7 +37,7 @@ app.Lifetime.ApplicationStarted.Register(async () =>
     {
         try
         {
-            await rpcClient.InitAsync();
+            await rpcClient.InitAsync("Result-Check-Authentication");
             Console.WriteLine("? ChatRpcClient initialized successfully.");
         }
         catch (Exception ex)
