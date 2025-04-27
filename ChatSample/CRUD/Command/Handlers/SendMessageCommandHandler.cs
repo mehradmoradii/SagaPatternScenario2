@@ -4,22 +4,25 @@ using ChatSample.Infrastructures.Interfaces.RabbitMQ;
 using ChatSample.Infrastructures.Interfaces.Repository;
 using ChatSample.Modules.Domains._0_Chats.Aggregate;
 using ChatSample.Modules.Domains._0_Chats.Entity;
-using System.Windows.Input;
+
 
 namespace ChatSample.CRUD.Command.Handlers
 {
     public class SendMessageCommandHandler : ICommandHandle<SendMessageCommand>
-    {
+    { 
         private readonly IRpcClient _client;
         private readonly IBaseRepository<Message, Guid> _messageRepository;
         private readonly IBaseRepository<Chat, Guid> _chatRepository;
+        private readonly IMessageSession _messageSession;
 
 
-        public SendMessageCommandHandler(IRpcClient client, IBaseRepository<Message, Guid> messageRepository, IBaseRepository<Chat, Guid> chatRepository)
+        public SendMessageCommandHandler(IRpcClient client, IBaseRepository<Message, Guid> messageRepository, IBaseRepository<Chat, Guid> chatRepository,
+            IMessageSession messageSession)
         {
             _client = client;
             _messageRepository = messageRepository;
             _chatRepository = chatRepository;
+            _messageSession = messageSession;
 
         }
 
@@ -27,7 +30,7 @@ namespace ChatSample.CRUD.Command.Handlers
 
         public async Task Handle(SendMessageCommand request, CancellationToken cancellationToken)
         {
-            var check = _client.CallWithResponse(request.recieverID, "Check-Authentication", "Result-Chack-Authentication", 60000);
+            var check = _client.CallWithResponse(request.recieverID, "Check-Authentication", "Result-Check-Authentication", 60000);
 
             if (check.Result.ToString() == "true")
             {
@@ -80,6 +83,11 @@ namespace ChatSample.CRUD.Command.Handlers
 
 
         }
+
+        
+
+            
+        
     }
 }
 

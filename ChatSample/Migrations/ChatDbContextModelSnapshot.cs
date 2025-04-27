@@ -51,10 +51,16 @@ namespace ChatSample.Migrations
                     b.Property<Guid>("BelongtouserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsPremium")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsReply")
                         .HasColumnType("bit");
 
                     b.Property<Guid?>("RepliedMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SenderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Text")

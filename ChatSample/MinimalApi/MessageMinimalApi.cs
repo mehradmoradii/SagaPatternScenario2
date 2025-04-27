@@ -1,5 +1,7 @@
 ﻿using ChatSample.CRUD.Command.Messages;
+using ChatSample.CRUD.Saga.PremiumChat.Commands;
 using ChatSample.Infrastructures.Interfaces.MinimalApi;
+
 using MediatR;
 
 namespace ChatSample.MinimalApi
@@ -9,6 +11,8 @@ namespace ChatSample.MinimalApi
         public void RegisterEndpints(WebApplication app)
         {
             app.MapPost("send/Message/", SendMessageToUser);
+            app.MapPost("StartPremiumChat/", StartPremiumChat);
+            
         }
 
 
@@ -23,5 +27,15 @@ namespace ChatSample.MinimalApi
             return Results.BadRequest();
             
         }
+
+
+        public async Task<IResult> StartPremiumChat(StartPremiumChatProccessCommand command, IMessageSession session)
+        {
+            await session.Send(command);
+            return Results.Accepted();
+        }
+
+
+
     }
 }

@@ -30,8 +30,10 @@ namespace ChatSample.Migrations
                 columns: table => new
                 {
                     userId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Text = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsReply = table.Column<bool>(type: "bit", nullable: false),
+                    IsPremium = table.Column<bool>(type: "bit", nullable: false),
                     RepliedMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     BelongtouserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     creation = table.Column<DateTime>(type: "datetime2", nullable: false)

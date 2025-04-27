@@ -1,0 +1,15 @@
+{
+  "NServiceBus.MessageId": "41ba1c34-f0a1-413c-8f09-b2c8009032e0",
+  "NServiceBus.MessageIntent": "Send",
+  "NServiceBus.ConversationId": "b140e766-f463-417c-81ec-b2c8009032e2",
+  "NServiceBus.CorrelationId": "41ba1c34-f0a1-413c-8f09-b2c8009032e0",
+  "NServiceBus.ReplyToAddress": "PremiumChat",
+  "NServiceBus.OriginatingMachine": "DEV5-M",
+  "NServiceBus.OriginatingEndpoint": "PremiumChat",
+  "$.diagnostics.originating.hostid": "f6fd0c8fa7caa7ab58f2cfa2c8db48c6",
+  "NServiceBus.ContentType": "application\/json",
+  "NServiceBus.EnclosedMessageTypes": "ChatSample.Saga.Messages.StartPremiumMessage, ChatSample, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+  "NServiceBus.Version": "9.2.7",
+  "NServiceBus.TimeSent": "2025-04-23 08:45:00:712183 Z",
+  "traceparent": "00-8c7548ccafb0b246998730be9e08617b-1d7734e7689957ee-00"
+}

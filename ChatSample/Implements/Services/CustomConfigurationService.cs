@@ -1,9 +1,11 @@
 ﻿using ChatSample.CRUD.Command.Handlers;
+
 using ChatSample.Infrastructures.Interfaces.MinimalApi;
 using ChatSample.Infrastructures.Interfaces.RabbitMQ;
 using ChatSample.Infrastructures.Interfaces.Repository;
 using ChatSample.MinimalApi;
 using ChatSample.Modules.Context;
+using ChatSample.Modules.Domains._0_Chats.Aggregate;
 using ChatSample.RabbitMQ.RpcClient;
 using ChatSample.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +36,7 @@ namespace ChatSample.Implements.Services
             });
 
             services.AddMediatR(hd => hd.RegisterServicesFromAssembly(typeof(SendMessageCommandHandler).Assembly));
+            services.AddMediatR(hd => hd.RegisterServicesFromAssembly(typeof(CreatePremiumChatCommandHandler).Assembly));   
 
 
 
@@ -42,7 +45,15 @@ namespace ChatSample.Implements.Services
 
             services.AddScoped<IRpcClient, ChatRpcClient>();
             services.AddScoped<IMinimalApi, MessageMinimalApi>();
+            services.AddScoped<BaseRepostory<Chat, Guid>>();
             services.AddScoped(typeof(IBaseRepository<,>), typeof(BaseRepostory<,>));
+
+
+
+
+
+
+
         }
     }
 }

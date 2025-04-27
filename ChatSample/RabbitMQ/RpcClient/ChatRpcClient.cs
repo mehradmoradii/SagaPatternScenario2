@@ -8,12 +8,12 @@ using System.Threading.Channels;
 
 namespace ChatSample.RabbitMQ.RpcClient
 {
-    public class ChatRpcClient : IRpcClient
+    public class ChatRpcClient : IRpcClient, IDisposable
     {
         private IConnection _connection;
         private IChannel _channel;
         private IConnectionFactory _connectionFactory;
-        private IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
 
         private readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _pendingRequests = new();
         private TaskCompletionSource<string> _tcs = new();
@@ -42,7 +42,7 @@ namespace ChatSample.RabbitMQ.RpcClient
             var replyQueue = await _channel.QueueDeclareAsync(
                 queue: responseQueueName,
                 durable: false,
-                exclusive: true,
+                exclusive: false,
                 autoDelete: true
             );
 
@@ -61,20 +61,24 @@ namespace ChatSample.RabbitMQ.RpcClient
 
         public async Task<string> CallWithResponse(string message, string requestQueueName, string responseQueueName, int timeout)
         {
-            _connection = await _connectionFactory.CreateConnectionAsync();
-            _channel = await _connection.CreateChannelAsync();
 
-            string result = "";
+            if (_connection == null || !_connection.IsOpen)
+                _connection = await _connectionFactory.CreateConnectionAsync();
+
+            if (_channel == null || _channel.IsClosed)
+                _channel = await _connection.CreateChannelAsync();
 
             await _channel.QueueDeclareAsync(queue: requestQueueName, durable: true, exclusive: false, autoDelete: false);
+            await _channel.QueueDeclareAsync(queue: responseQueueName, durable: false, exclusive: false, autoDelete: true);
 
-            var corrId = Guid.NewGuid().ToString();
-            var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _corrId = Guid.NewGuid().ToString();
+            _tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            _pendingRequests.TryAdd(_corrId, _tcs);
 
             var props = new BasicProperties
             {
-                CorrelationId = corrId,
+                CorrelationId = _corrId,
                 ReplyTo = responseQueueName
             };
 
@@ -92,7 +96,7 @@ namespace ChatSample.RabbitMQ.RpcClient
             {
                 var body = ea.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
-                tcs.SetResult(json);
+                _tcs.SetResult(json);
 
             };
             
@@ -103,15 +107,12 @@ namespace ChatSample.RabbitMQ.RpcClient
                 consumer: _consumer
             );
 
-            using var cts = new CancellationTokenSource(timeout);
-            cts.Token.Register(() =>
-            {
-                if (_pendingRequests.TryRemove(corrId, out var timedOutTcs))
-                    timedOutTcs.TrySetCanceled();
-            });
+            
 
             
-            return await tcs.Task;
+
+            return await _tcs.Task;
+
         }
 
         public Task OnResponse(object response, BasicDeliverEventArgs ea)
@@ -124,6 +125,13 @@ namespace ChatSample.RabbitMQ.RpcClient
             }
 
             return _tcs.Task;
+        }
+
+        public async void Dispose()
+        { 
+
+           await _channel?.CloseAsync();
+           await _connection?.CloseAsync();
         }
     }
 }

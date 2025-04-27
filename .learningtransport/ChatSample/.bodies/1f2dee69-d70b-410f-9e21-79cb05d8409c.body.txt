@@ -1,0 +1,1 @@
+{"MessageId":"961b72d2-73c0-4fc7-95f5-f7cb572b5771","SenderId":"89bce871-9a4a-4abe-e793-08dd82457d2f","ReceiverId":"45406683-786c-4b12-e794-08dd82457d2f","MessageContent":"hellio","PremiumAmount":50}

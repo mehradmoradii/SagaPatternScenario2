@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ChatSample.Migrations
 {
     [DbContext(typeof(ChatDbContext))]
-    [Migration("20250419144517_init2")]
-    partial class init2
+    [Migration("20250423090023_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,10 +54,16 @@ namespace ChatSample.Migrations
                     b.Property<Guid>("BelongtouserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsPremium")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsReply")
                         .HasColumnType("bit");
 
                     b.Property<Guid?>("RepliedMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SenderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Text")

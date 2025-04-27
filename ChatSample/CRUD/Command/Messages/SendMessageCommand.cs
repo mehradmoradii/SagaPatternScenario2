@@ -2,7 +2,7 @@
 
 namespace ChatSample.CRUD.Command.Messages
 {
-    public class SendMessageCommand : ICommand
+    public class SendMessageCommand : Infrastructures.Interfaces.Command.ICommand
     {
         public string senderID { get; set; }
         public string recieverID { get; set; }

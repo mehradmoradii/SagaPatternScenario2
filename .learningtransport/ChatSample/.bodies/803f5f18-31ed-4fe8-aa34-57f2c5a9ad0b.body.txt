@@ -1,0 +1,1 @@
+{"MessageId":"ea00d9c1-ceae-4dcc-9d0c-c84fbdc0786d","SenderId":"f20ba66c-a53b-4dcb-c051-08dd80d377df","ReceiverId":"59a010ec-3884-4bfb-1e23-08dd819506a9","MessageContent":"sdvsdfdfsfsf","PremiumAmount":5}
